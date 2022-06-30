@@ -1,0 +1,168 @@
+
+BASIC_TAX = 10
+IMPORT_TAX = 5
+
+# Basic tax exempt list contains names of all the items that should exclude calculating of basic tax
+BASIC_TAX_EXEMPT = [
+    'book',
+    'chocolate bar',
+    'imported box of chocolates',
+    'packet of headache pills',
+    'box of imported chocolates'
+]
+
+
+
+# Added items in cart represented in list format
+order_one = [
+    '1 book at 12.49',
+    '1 music CD at 14.99',
+    '1 chocolate bar at 0.85'
+]
+
+order_two = [
+    '1 imported box of chocolates at 10.00',
+    '1 imported bottle of perfume at 47.50'
+]
+
+order_three = [
+    '1 imported bottle of perfume at 27.99',
+    '1 bottle of perfume at 18.99',
+    '1 packet of headache pills at 9.75',
+    '1 box of imported chocolates at 11.25',
+]
+
+
+
+class CalculateTax:
+    
+    def calculate_total_tax(self, cart_details):
+        for item in cart_details:
+            basic_tax = 0
+            import_tax = 0
+            is_basic_tax = item['is_basic_tax']
+            is_imported = item['is_imported']
+            item_price = item['item_price']
+
+            if is_basic_tax:
+                basic_tax = self.__calculate_basic_tax(item_price)
+
+            if is_imported:
+                import_tax = self.__calculate_import_tax(item_price)
+
+            # Calculating total tax for each item
+            total_tax = basic_tax + import_tax
+            item['total_tax'] = round(total_tax, 2)
+            item['item_price'] = round(float(item_price) + total_tax, 2)
+
+        return cart_details
+
+    @staticmethod
+    def __calculate_basic_tax(item_price):
+        """
+        :param item_price: Calculates basic tax w.r.t item price
+        :return:
+        """
+        tax = calculate_tax(BASIC_TAX, item_price)
+        return tax
+
+    @staticmethod
+    def __calculate_import_tax(item_price):
+        
+        tax = calculate_tax(IMPORT_TAX, item_price)
+        return tax
+
+
+# calculate tax based on tax percent and price
+def calculate_tax(tax, item_price):
+    return round((tax / 100) * float(item_price), 2)
+    
+
+class ShoppingCart:
+    def __init__(self, item_list):
+        self.item_list = item_list
+
+    def finalize_cart(self):
+        
+        cart_details = []
+        for item in self.item_list:
+            item_detail_object = {}
+            item_detail = item.split(' ')
+            last_index_of_list = len(item_detail) - 1
+            item_name = self.__get_item_name(item_detail, last_index_of_list)
+            item_quantity = item_detail[0]
+            item_price = item_detail[last_index_of_list]
+
+            item_detail_object['item_name'] = item_name
+            item_detail_object['item_quantity'] = item_quantity
+            item_detail_object['item_price'] = item_price
+            final_object = self.__check_tax_constraints(item_detail_object, item_detail)
+            cart_details.append(final_object)
+
+        return cart_details
+
+    @staticmethod
+    def __get_item_name(item_list, last_index_of_list):
+        
+        new_item_list = item_list.copy()
+        index_of_at = new_item_list.index('at')
+        new_item_list.pop(last_index_of_list)
+        new_item_list.pop(index_of_at)
+        new_item_list.pop(0)
+        item_name = ' '.join(new_item_list)
+        return item_name
+
+    @staticmethod
+    def __check_tax_constraints(item_detail_object, item_detail):
+        
+        is_basic_tax = True
+        is_imported = False
+        item_name = item_detail_object['item_name']
+
+        if item_name in BASIC_TAX_EXEMPT:
+            is_basic_tax = False
+
+        if 'imported' in item_detail:
+            is_imported = True
+
+        item_detail_object['is_imported'] = is_imported
+        item_detail_object['is_basic_tax'] = is_basic_tax
+
+        return item_detail_object
+
+
+# Prints order receipt based on items in the cart
+def print_receipt(order_list):
+    
+    if len(order_list) == 0:
+        print("No items in cart")
+    else:
+        shopping_cart = ShoppingCart(order_list)
+        cart_details = shopping_cart.finalize_cart()
+        cart_after_tax = CalculateTax().calculate_total_tax(cart_details)
+        total_sales_tax = []
+        total_price = []
+        print("             Reciept             ")
+        for item in cart_after_tax:
+            total_sales_tax.append(item['total_tax'])
+            total_price.append(item['item_price'])
+            print(f"{item['item_quantity']} {item['item_name']}: {'{:.2f}'.format(item['item_price'])}")
+
+        print(f'Sales Taxes: {"{:.2f}".format(sum(total_sales_tax))}')
+        print(f'Total: {sum(total_price)}')
+        print('             Thank You!             ')
+
+
+
+print('\n'.join(map(str, order_one))) 
+print('\n')
+print('\n'.join(map(str, order_two))) 
+print('\n')
+print('\n'.join(map(str, order_three))) 
+print('\n')
+
+print_receipt(order_one)
+print('\n')
+print_receipt(order_two)
+print('\n')
+print_receipt(order_three)
